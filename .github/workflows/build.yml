@@ -1,0 +1,34 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: arduino/setup-arduino-cli@v2
+
+      - name: Install STM32 core and libraries
+        run: |
+          arduino-cli config init
+          arduino-cli config add board_manager.additional_urls https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json
+          arduino-cli core update-index
+          arduino-cli core install STMicroelectronics:stm32
+          arduino-cli lib install U8g2 OneWire DallasTemperature
+
+      - name: Compile (Generic STM32F030C8Tx)
+        run: |
+          arduino-cli compile \
+            --fqbn STMicroelectronics:stm32:GenF0:pnum=GENERIC_F030C8TX \
+            --warnings default \
+            --output-dir build .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firmware
+          path: build/*.bin
